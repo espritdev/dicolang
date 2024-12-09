@@ -16,6 +16,9 @@
             --bg-light: #f5f6fa;
             --navbar-height: 60px;
             --search-height: 80px;
+            --input-text: #495057;
+            --input-bg: #ffffff;
+            --input-border: #ced4da;
         }
 
         [data-bs-theme="light"] {
@@ -24,8 +27,6 @@
             --bg-color: var(--bg-light);
             --card-bg: #ffffff;
             --navbar-bg: var(--primary-dark);
-            --input-bg: #ffffff;
-            --input-text: #333333;
             --border-color: #dee2e6;
         }
 
@@ -125,8 +126,15 @@
 
         input, select, textarea {
             background-color: var(--input-bg) !important;
-            color: var(--input-text) !important;
             border-color: var(--border-color) !important;
+        }
+
+        .form-control {
+            color: var(--input-text) !important;
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted) !important;
         }
 
         .card {
