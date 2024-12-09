@@ -114,83 +114,67 @@ def get_all_translations(word, source_lang):
     
     return translations
 
-def get_wiktionary_content(word, lang='fr'):
-    cache_key = f"{word}:{lang}"
-    if cache_key in wiktionary_cache:
-        return wiktionary_cache[cache_key]
-
-    base_url = f'https://{lang}.wiktionary.org/wiki/'
+def get_wiktionary_data(word, lang='fr'):
     try:
-        # Utiliser SoupStrainer pour parser uniquement les sections pertinentes
-        only_content = SoupStrainer(['h2', 'h3', 'h4', 'ol', 'ul', 'p'])
-        
-        # Timeout court pour la requête
-        response = session.get(base_url + word, timeout=2)
-        if response.status_code != 200:
-            raise Exception("Page non trouvée")
+        # Construire l'URL en fonction de la langue
+        if lang == 'fr':
+            url = f'https://fr.wiktionary.org/wiki/{word}'
+        else:
+            url = f'https://fr.wiktionary.org/wiki/{word}#{LANGUAGES.get(lang, lang)}'
 
-        # Parser uniquement les sections nécessaires
-        soup = BeautifulSoup(response.text, 'lxml', parse_only=only_content)
-        
-        result = {
-            'word': word,
-            'definitions': [],
-            'etymology': None,
-            'examples': []
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
-
-        # Map des IDs de section par langue
-        lang_sections = {
-            'fr': ['Français', 'français'],
-            'en': ['English'],
-            'de': ['Deutsch'],
-            'es': ['Español'],
-            'it': ['Italiano']
+        
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()  # Lève une exception pour les erreurs HTTP
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Récupérer l'étymologie
+        etymology = None
+        etymology_section = soup.find('span', id=lambda x: x and 'tymologie' in x)
+        if etymology_section:
+            etymology_p = etymology_section.find_next('p')
+            if etymology_p:
+                etymology = etymology_p.get_text().strip()
+        
+        # Récupérer les définitions
+        definitions = []
+        definitions_section = soup.find('span', id=lambda x: x and ('finitions' in x or 'Definitions' in x))
+        if definitions_section:
+            # Trouver la liste des définitions
+            definitions_list = definitions_section.find_next('ol')
+            if definitions_list:
+                for definition in definitions_list.find_all('li', recursive=False):
+                    # Nettoyer la définition
+                    def_text = definition.get_text().strip()
+                    if def_text and not def_text.startswith('(') and len(def_text) > 1:
+                        definitions.append(def_text)
+        
+        # Récupérer les exemples
+        examples = []
+        for definition in definitions_list.find_all('li') if definitions_list else []:
+            example_list = definition.find('ul')
+            if example_list:
+                for example in example_list.find_all('li'):
+                    example_text = example.get_text().strip()
+                    if example_text:
+                        examples.append(example_text)
+        
+        return {
+            'etymology': etymology,
+            'definitions': definitions[:5],  # Limiter à 5 définitions
+            'examples': examples[:3]  # Limiter à 3 exemples
         }
-
-        # Trouver la section de langue
-        current_section = None
-        for heading in soup.find_all(['h2', 'h3', 'h4']):
-            if any(lang_id in heading.get_text() for lang_id in lang_sections.get(lang, [])):
-                current_section = heading
-                break
-
-        if current_section:
-            # Parcourir les éléments suivants jusqu'à la prochaine section de langue
-            current = current_section.find_next_sibling()
-            while current and not (current.name == 'h2' and any(lang_id in current.get_text() for lang_id in sum(lang_sections.values(), []))):
-                if current.name == 'ol':
-                    for li in current.find_all('li', recursive=False):
-                        text = li.get_text().strip()
-                        if text and not text.startswith('\\'):
-                            result['definitions'].append(text)
-                            
-                            # Chercher les exemples
-                            for example in li.find_all('ul'):
-                                for ex in example.find_all('li'):
-                                    ex_text = ex.get_text().strip()
-                                    if ex_text:
-                                        result['examples'].append(ex_text)
-                
-                elif current.name == 'p' and 'étymologie' in current.get_text().lower():
-                    result['etymology'] = current.get_text().strip()
-                
-                current = current.find_next_sibling()
-
-        # Mettre en cache le résultat
-        wiktionary_cache[cache_key] = result
-        return result
-
+        
     except Exception as e:
-        print(f"Erreur Wiktionary ({word}): {str(e)}")
-        default_result = {
-            'word': word,
-            'definitions': ["Définition non trouvée"],
+        print(f"Erreur lors de la récupération des données Wiktionary: {str(e)}")
+        return {
             'etymology': None,
+            'definitions': [],
             'examples': []
         }
-        wiktionary_cache[cache_key] = default_result
-        return default_result
 
 @app.route('/')
 def home():
@@ -220,19 +204,20 @@ def search():
         # Exécuter les requêtes en parallèle
         with ThreadPoolExecutor(max_workers=2) as executor:
             translations_future = executor.submit(get_all_translations, word, lang)
-            wiktionary_future = executor.submit(get_wiktionary_content, word, lang)
+            wiktionary_future = executor.submit(get_wiktionary_data, word, lang)
             
             translations = translations_future.result()
-            wiktionary = wiktionary_future.result()
+            wiktionary_data = wiktionary_future.result()
         
         return jsonify({
             "translations": translations,
-            "etymology": wiktionary.get('etymology'),
-            "definitions": wiktionary.get('definitions', []),
-            "examples": wiktionary.get('examples', [])
+            "etymology": wiktionary_data.get('etymology'),
+            "definitions": wiktionary_data.get('definitions'),
+            "examples": wiktionary_data.get('examples')
         })
         
     except Exception as e:
+        print(f"Erreur lors de la recherche: {str(e)}")
         return jsonify({"error": f"Une erreur s'est produite: {str(e)}"})
 
 @app.route('/historique')
