@@ -122,7 +122,7 @@ def get_wiktionary_data(word, lang='fr'):
         else:
             url = f'https://fr.wiktionary.org/wiki/{word}#{LANGUAGES.get(lang, lang)}'
 
-        print(f"Fetching Wiktionary data from: {url}")
+        print(f"[Wiktionary] Fetching data from: {url}")
 
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -131,26 +131,43 @@ def get_wiktionary_data(word, lang='fr'):
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         
-        soup = BeautifulSoup(response.text, 'html.parser')
+        print(f"[Wiktionary] Response status code: {response.status_code}")
+        
+        # Utiliser explicitement lxml comme parser
+        soup = BeautifulSoup(response.text, 'lxml')
+        
+        print("[Wiktionary] HTML parsed successfully")
         
         # Trouver la section française
         french_section = None
         for h2 in soup.find_all('h2'):
-            if h2.find('span', {'id': 'Français'}) or h2.find('span', {'id': 'français'}):
+            span = h2.find('span', {'id': ['Français', 'français']})
+            if span:
                 french_section = h2
+                print(f"[Wiktionary] Found French section with id: {span.get('id')}")
                 break
         
         if not french_section:
-            print("Section française non trouvée")
-            return {'etymology': None, 'definitions': [], 'examples': []}
-        
-        # Récupérer toutes les sections jusqu'à la prochaine h2
-        content = []
-        current = french_section.find_next()
-        while current and current.name != 'h2':
-            if current.name in ['h3', 'h4', 'p', 'ol']:
-                content.append(current)
-            current = current.find_next()
+            print("[Wiktionary] French section not found in the page")
+            # Vérifier si la page existe
+            if "Wiktionnaire ne possède pas d'article avec ce nom" in response.text:
+                print("[Wiktionary] Page does not exist")
+                return {'etymology': None, 'definitions': [], 'examples': []}
+            # Essayer de trouver directement les définitions si la section française n'est pas trouvée
+            definitions_list = soup.find('ol')
+            if definitions_list:
+                print("[Wiktionary] Found definitions list without French section")
+                content = [definitions_list]
+            else:
+                return {'etymology': None, 'definitions': [], 'examples': []}
+        else:
+            # Récupérer toutes les sections jusqu'à la prochaine h2
+            content = []
+            current = french_section.find_next()
+            while current and current.name != 'h2':
+                if current.name in ['h3', 'h4', 'p', 'ol']:
+                    content.append(current)
+                current = current.find_next()
         
         # Récupérer les définitions
         definitions = []
@@ -163,7 +180,7 @@ def get_wiktionary_data(word, lang='fr'):
                 etym_p = section.find_next('p')
                 if etym_p:
                     etymology = etym_p.get_text().strip()
-                    print(f"Étymologie trouvée: {etymology}")
+                    print(f"[Wiktionary] Etymology found: {etymology[:50]}...")
             
             # Chercher les définitions
             if section.name == 'ol':
@@ -176,7 +193,7 @@ def get_wiktionary_data(word, lang='fr'):
                         def_text = def_text.strip()
                         if def_text:
                             definitions.append(def_text)
-                            print(f"Définition trouvée: {def_text}")
+                            print(f"[Wiktionary] Definition found: {def_text[:50]}...")
                         
                         # Chercher les exemples dans cette définition
                         example_ul = li.find('ul')
@@ -185,7 +202,7 @@ def get_wiktionary_data(word, lang='fr'):
                                 ex_text = ex_li.get_text().strip()
                                 if ex_text:
                                     examples.append(ex_text)
-                                    print(f"Exemple trouvé: {ex_text}")
+                                    print(f"[Wiktionary] Example found: {ex_text[:50]}...")
         
         result = {
             'etymology': etymology,
@@ -193,18 +210,17 @@ def get_wiktionary_data(word, lang='fr'):
             'examples': examples[:3]
         }
         
-        print(f"Résultat final pour {word}: {result}")
+        print(f"[Wiktionary] Final result for {word}: {len(definitions)} definitions, {len(examples)} examples")
         return result
         
+    except requests.RequestException as e:
+        print(f"[Wiktionary] Network error: {str(e)}")
+        return {'etymology': None, 'definitions': [], 'examples': []}
     except Exception as e:
-        print(f"Erreur lors de la récupération des données Wiktionary: {str(e)}")
+        print(f"[Wiktionary] Unexpected error: {str(e)}")
         import traceback
-        traceback.print_exc()
-        return {
-            'etymology': None,
-            'definitions': [],
-            'examples': []
-        }
+        print(f"[Wiktionary] Traceback: {traceback.format_exc()}")
+        return {'etymology': None, 'definitions': [], 'examples': []}
 
 @app.route('/')
 def home():
