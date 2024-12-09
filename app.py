@@ -47,24 +47,37 @@ def close_connection(exception):
         db.close()
 
 def init_db():
-    with app.app_context():
-        db = get_db()
-        with app.open_resource('schema.sql', mode='r') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
+    try:
+        with app.app_context():
+            db = get_db()
+            db.execute('''CREATE TABLE IF NOT EXISTS search_history
+                         (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                          word TEXT NOT NULL,
+                          source_lang TEXT NOT NULL,
+                          timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+            db.commit()
+    except Exception as e:
+        print(f"Error initializing database: {e}")
 
 def add_to_history(word, lang):
-    with app.app_context():
-        db = get_db()
-        db.execute('INSERT INTO search_history (word, source_lang) VALUES (?, ?)', 
-                  (word, lang))
-        db.commit()
+    try:
+        with app.app_context():
+            db = get_db()
+            db.execute('INSERT INTO search_history (word, source_lang) VALUES (?, ?)', 
+                      (word, lang))
+            db.commit()
+    except Exception as e:
+        print(f"Error adding to history: {e}")
 
 def get_search_history():
-    with app.app_context():
-        db = get_db()
-        cur = db.execute('SELECT * FROM search_history ORDER BY timestamp DESC LIMIT 50')
-        return cur.fetchall()
+    try:
+        with app.app_context():
+            db = get_db()
+            cur = db.execute('SELECT * FROM search_history ORDER BY timestamp DESC LIMIT 50')
+            return cur.fetchall()
+    except Exception as e:
+        print(f"Error getting history: {e}")
+        return []
 
 def cached_translate_word(word, source_lang, target_lang):
     cache_key = f"{word}:{source_lang}:{target_lang}"
@@ -227,8 +240,9 @@ def historique():
     history = get_search_history()
     return render_template('historique.html', history=history)
 
+# Initialize the database at startup
+init_db()
+
 if __name__ == '__main__':
-    with app.app_context():
-        init_db()
     port = int(os.environ.get('PORT', 5002))
     app.run(host='0.0.0.0', port=port)
