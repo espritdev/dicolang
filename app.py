@@ -10,6 +10,7 @@ import cachetools
 import sqlite3
 from datetime import datetime
 import os
+from urllib.parse import quote
 
 app = Flask(__name__)
 
@@ -280,27 +281,57 @@ def search():
         return jsonify({"error": "Veuillez entrer un mot"})
     
     try:
-        # Ajouter la recherche à l'historique
-        add_to_history(word, lang)
+        original_word = word
         
-        # Exécuter les requêtes en parallèle
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            translations_future = executor.submit(get_all_translations, word, lang)
-            wiktionary_future = executor.submit(get_wiktionary_data, word, lang)
+        # Rechercher d'abord avec le mot tel quel
+        wiktionary_url = f"https://fr.wiktionary.org/wiki/{quote(original_word)}"
+        response = requests.get(wiktionary_url, headers=session.headers)
+        
+        if response.status_code == 404:
+            # Si non trouvé, essayer en minuscules
+            word_lower = word.lower()
+            wiktionary_url = f"https://fr.wiktionary.org/wiki/{quote(word_lower)}"
+            response = requests.get(wiktionary_url, headers=session.headers)
             
-            translations = translations_future.result()
-            wiktionary_data = wiktionary_future.result()
+            if response.status_code == 404:
+                # Si toujours non trouvé, essayer avec la première lettre en majuscule
+                word_capitalized = word.capitalize()
+                wiktionary_url = f"https://fr.wiktionary.org/wiki/{quote(word_capitalized)}"
+                response = requests.get(wiktionary_url, headers=session.headers)
         
-        return jsonify({
-            "translations": translations,
-            "etymology": wiktionary_data.get('etymology'),
-            "definitions": wiktionary_data.get('definitions'),
-            "examples": wiktionary_data.get('examples')
-        })
-        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Sauvegarder dans l'historique avec le mot original (avec majuscules si présentes)
+            add_to_history(original_word, lang)
+            
+            # Exécuter les requêtes en parallèle
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                translations_future = executor.submit(get_all_translations, original_word, lang)
+                wiktionary_future = executor.submit(get_wiktionary_data, original_word, lang)
+                
+                translations = translations_future.result()
+                wiktionary_data = wiktionary_future.result()
+            
+            return jsonify({
+                "translations": translations,
+                "etymology": wiktionary_data.get('etymology'),
+                "definitions": wiktionary_data.get('definitions'),
+                "examples": wiktionary_data.get('examples')
+            })
+            
+        else:
+            return jsonify({
+                'error': True,
+                'message': f"Le mot '{original_word}' n'a pas été trouvé dans le Wiktionnaire."
+            })
+            
     except Exception as e:
-        print(f"Erreur lors de la recherche: {str(e)}")
-        return jsonify({"error": f"Une erreur s'est produite: {str(e)}"})
+        print(f"Erreur lors de la recherche : {str(e)}")
+        return jsonify({
+            'error': True,
+            'message': "Une erreur s'est produite lors de la recherche. Veuillez réessayer."
+        })
 
 @app.route('/historique')
 def historique():
