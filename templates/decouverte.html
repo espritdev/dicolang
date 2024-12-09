@@ -1,5 +1,124 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<style>
+    .discovery-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .word-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+        padding: 1rem 0;
+    }
+
+    .word-card {
+        background: var(--card-bg);
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    .word-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .word-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: var(--primary-color);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.3s ease;
+    }
+
+    .word-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .word {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .word i {
+        font-size: 1.2rem;
+        opacity: 0;
+        transform: translateX(-10px);
+        transition: all 0.3s ease;
+    }
+
+    .word-card:hover .word i {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .definition {
+        color: var(--text-color);
+        margin-bottom: 1rem;
+        line-height: 1.6;
+    }
+
+    .lang-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        background-color: var(--primary-color);
+        color: var(--text-light);
+        border-radius: 20px;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+    }
+
+    .word-card:hover .lang-badge {
+        transform: scale(1.05);
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .word-cards {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .word-card {
+            padding: 1.25rem;
+        }
+
+        .word {
+            font-size: 1.3rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block title %}Découverte - Dico'Lang{% endblock %}
 
 {% block content %}
@@ -14,32 +133,32 @@
             </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Mot du jour en Français</h4>
-                    <p class="card-text">Sérendipité</p>
-                    <p class="text-muted">Don de faire des découvertes heureuses par hasard</p>
+    <div class="discovery-container">
+        <h2 class="mb-4"><i class="fas fa-random"></i> Découverte du jour</h2>
+        <div class="word-cards">
+            <div class="word-card">
+                <div class="word">
+                    Sérendipité
+                    <i class="fas fa-search"></i>
                 </div>
+                <div class="definition">Don de faire des découvertes heureuses par hasard</div>
+                <span class="lang-badge">Français</span>
             </div>
-        </div>
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Word of the Day</h4>
-                    <p class="card-text">Wanderlust</p>
-                    <p class="text-muted">A strong desire to travel and explore</p>
+            <div class="word-card">
+                <div class="word">
+                    Wanderlust
+                    <i class="fas fa-search"></i>
                 </div>
+                <div class="definition">A strong desire to travel and explore</div>
+                <span class="lang-badge">Anglais</span>
             </div>
-        </div>
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Wort des Tages</h4>
-                    <p class="card-text">Fernweh</p>
-                    <p class="text-muted">Sehnsucht nach fernen Orten</p>
+            <div class="word-card">
+                <div class="word">
+                    Fernweh
+                    <i class="fas fa-search"></i>
                 </div>
+                <div class="definition">Sehnsucht nach fernen Orten</div>
+                <span class="lang-badge">Allemand</span>
             </div>
         </div>
     </div>
