@@ -19,9 +19,10 @@
     }
 
     .history-container {
-        max-width: 800px;
-        margin: 2rem auto;
-        padding: 0 1rem;
+        width: 100%;
+        max-width: 1200px;
+        margin: 0.5rem auto;
+        padding: 0 0.5rem;
     }
 
     .history-table {
@@ -105,6 +106,45 @@
     .btn-download:hover {
         background-color: var(--success-color);
         color: white;
+    }
+
+    @media (max-width: 768px) {
+        .history-container {
+            padding: 0;
+            margin: 0;
+        }
+
+        .history-table {
+            border-radius: 0;
+            margin: 0 -1rem;
+        }
+
+        .action-buttons {
+            padding: 0 1rem;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .action-buttons .btn {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .table td, .table th {
+            padding: 1rem 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .lang-badge {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-sm {
+            padding: 0.5rem !important;
+            font-size: 1rem !important;
+        }
     }
 </style>
 {% endblock %}
