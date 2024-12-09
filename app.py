@@ -259,9 +259,86 @@ def get_wiktionary_data(word, lang='fr'):
         print(f"[Wiktionary] Traceback: {traceback.format_exc()}")
         return {'etymology': None, 'definitions': [], 'examples': []}
 
-@app.route('/')
-def home():
+@app.route('/', methods=['GET'])
+def index():
+    word = request.args.get('word', '').strip()
+    source_lang = request.args.get('lang', 'fr')
+    
+    if word:
+        # Garder le mot original pour l'affichage et l'historique
+        original_word = word
+        # Convertir en minuscules pour la recherche
+        search_word = original_word.lower()
+        
+        try:
+            # Rechercher avec le mot en minuscules
+            wiktionary_url = f"https://fr.wiktionary.org/wiki/{quote(search_word)}"
+            response = requests.get(wiktionary_url, headers=session.headers)
+            
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.content, 'html.parser')
+                
+                # Sauvegarder dans l'historique avec le mot original
+                add_to_history(original_word, source_lang)
+                
+                return jsonify({
+                    "translations": get_all_translations(search_word, source_lang),
+                    "etymology": get_wiktionary_data(search_word, source_lang).get('etymology'),
+                    "definitions": get_wiktionary_data(search_word, source_lang).get('definitions'),
+                    "examples": get_wiktionary_data(search_word, source_lang).get('examples')
+                })
+                
+            else:
+                return jsonify({
+                    'error': True,
+                    'message': f"Le mot '{original_word}' n'a pas été trouvé dans le Wiktionnaire."
+                })
+                
+        except Exception as e:
+            print(f"Erreur lors de la recherche : {str(e)}")
+            return jsonify({
+                'error': True,
+                'message': "Une erreur s'est produite lors de la recherche. Veuillez réessayer."
+            })
+    
     return render_template('index.html')
+
+@app.route('/search', methods=['POST'])
+def search():
+    data = request.get_json()
+    word = data.get('word', '').strip()
+    lang = data.get('lang', 'fr')
+    
+    if not word:
+        return jsonify({"error": "Veuillez entrer un mot"})
+    
+    try:
+        # Garder le mot original pour l'affichage et l'historique
+        original_word = word
+        # Convertir en minuscules pour la recherche
+        search_word = original_word.lower()
+        
+        # Ajouter la recherche à l'historique avec le mot original
+        add_to_history(original_word, lang)
+        
+        # Exécuter les requêtes en parallèle avec le mot en minuscules
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            translations_future = executor.submit(get_all_translations, search_word, lang)
+            wiktionary_future = executor.submit(get_wiktionary_data, search_word, lang)
+            
+            translations = translations_future.result()
+            wiktionary_data = wiktionary_future.result()
+        
+        return jsonify({
+            "translations": translations,
+            "etymology": wiktionary_data.get('etymology'),
+            "definitions": wiktionary_data.get('definitions'),
+            "examples": wiktionary_data.get('examples')
+        })
+        
+    except Exception as e:
+        print(f"Erreur lors de la recherche: {str(e)}")
+        return jsonify({"error": f"Une erreur s'est produite: {str(e)}"})
 
 @app.route('/decouverte')
 def decouverte():
@@ -270,58 +347,6 @@ def decouverte():
 @app.route('/a-propos')
 def a_propos():
     return render_template('a_propos.html')
-
-@app.route('/search', methods=['GET'])
-def search_word():
-    word = request.args.get('word', '')
-    lang = request.args.get('lang', 'fr')
-    
-    if not word:
-        return jsonify({"error": "Veuillez entrer un mot"})
-    
-    try:
-        # Garder le mot original pour l'affichage et l'historique
-        original_word = word.strip()
-        # Convertir en minuscules pour la recherche
-        search_word = original_word.lower()
-        
-        # Rechercher avec le mot en minuscules
-        wiktionary_url = f"https://fr.wiktionary.org/wiki/{quote(search_word)}"
-        response = requests.get(wiktionary_url, headers=session.headers)
-        
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Sauvegarder dans l'historique avec le mot original
-            add_to_history(original_word, lang)
-            
-            # Exécuter les requêtes en parallèle
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                translations_future = executor.submit(get_all_translations, search_word, lang)
-                wiktionary_future = executor.submit(get_wiktionary_data, search_word, lang)
-                
-                translations = translations_future.result()
-                wiktionary_data = wiktionary_future.result()
-            
-            return jsonify({
-                "translations": translations,
-                "etymology": wiktionary_data.get('etymology'),
-                "definitions": wiktionary_data.get('definitions'),
-                "examples": wiktionary_data.get('examples')
-            })
-            
-        else:
-            return jsonify({
-                'error': True,
-                'message': f"Le mot '{original_word}' n'a pas été trouvé dans le Wiktionnaire."
-            })
-            
-    except Exception as e:
-        print(f"Erreur lors de la recherche : {str(e)}")
-        return jsonify({
-            'error': True,
-            'message': "Une erreur s'est produite lors de la recherche. Veuillez réessayer."
-        })
 
 @app.route('/historique')
 def historique():
