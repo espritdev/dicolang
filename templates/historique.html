@@ -2,62 +2,49 @@
 
 {% block extra_css %}
 <style>
-    :root {
-        --primary-light: #007bff;
-        --text-light: #ffffff;
-        --card-bg: #ffffff;
-        --text-color: #333333;
-        --danger-color: #dc3545;
-        --success-color: #28a745;
-    }
-
-    [data-theme="dark"] {
-        --primary-light: #4da3ff;
-        --text-light: #ffffff;
-        --card-bg: #2d2d2d;
-        --text-color: #e0e0e0;
-    }
-
     .history-container {
-        width: 100%;
+        width: 90%;
         max-width: 1200px;
-        margin: 0.5rem auto;
-        padding: 0 0.5rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
     }
 
-    .history-table {
+    .table-responsive {
+        margin: 0;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table {
+        width: 100%;
+        margin-bottom: 0;
         background: var(--card-bg);
         border-radius: 10px;
         overflow: hidden;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
-    .history-table th {
+    .table th {
         background-color: var(--primary-light);
         color: var(--text-light);
+        white-space: nowrap;
+        padding: 1rem 0.75rem;
         font-weight: 500;
-        text-transform: uppercase;
-        font-size: 0.9rem;
     }
 
-    .history-table td {
+    .table td {
+        padding: 1rem 0.75rem;
         vertical-align: middle;
-        color: var(--text-color);
-    }
-
-    .history-table tr:hover {
-        background-color: rgba(128, 128, 128, 0.1);
     }
 
     .search-word {
         color: var(--primary-light);
-        font-weight: 500;
-        cursor: pointer;
         text-decoration: none;
+        font-weight: 500;
+        word-break: break-word;
     }
 
     .search-word:hover {
-        color: var(--primary-light);
         text-decoration: underline;
     }
 
@@ -66,13 +53,48 @@
         color: var(--text-light);
         padding: 0.25rem 0.75rem;
         border-radius: 20px;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
+        display: inline-block;
+    }
+
+    .date-time {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 85px;
+    }
+
+    .date-time .date {
+        font-weight: 500;
+    }
+
+    .date-time .time {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .action-buttons .btn {
+        flex: 1;
+        min-width: 200px;
+        white-space: nowrap;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
     }
 
     .empty-history {
         text-align: center;
-        padding: 3rem;
-        color: var(--text-color);
+        padding: 3rem 1rem;
     }
 
     .empty-history i {
@@ -81,69 +103,85 @@
         margin-bottom: 1rem;
     }
 
-    .action-buttons {
-        margin-bottom: 1rem;
-        display: flex;
-        gap: 1rem;
-        justify-content: flex-end;
-    }
-
-    .btn-delete {
-        color: var(--danger-color);
-        border-color: var(--danger-color);
-    }
-
-    .btn-delete:hover {
-        background-color: var(--danger-color);
-        color: white;
-    }
-
-    .btn-download {
-        color: var(--success-color);
-        border-color: var(--success-color);
-    }
-
-    .btn-download:hover {
-        background-color: var(--success-color);
-        color: white;
-    }
-
     @media (max-width: 768px) {
         .history-container {
+            width: 100%;
+            margin: 1rem 0;
             padding: 0;
-            margin: 0;
         }
 
-        .history-table {
+        .table {
             border-radius: 0;
-            margin: 0 -1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.9rem;
         }
 
         .action-buttons {
             padding: 0 1rem;
             flex-direction: column;
-            gap: 0.5rem;
         }
 
         .action-buttons .btn {
             width: 100%;
-            padding: 0.75rem;
-            font-size: 1rem;
+            min-width: unset;
         }
 
-        .table td, .table th {
-            padding: 1rem 0.5rem;
-            font-size: 0.9rem;
+        .table-actions .btn {
+            padding: 0.4rem 0.6rem;
         }
 
         .lang-badge {
-            padding: 0.25rem 0.5rem;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.8rem;
+        }
+    }
+
+    @media (max-width: 425px) {
+        .history-container h2 {
+            font-size: 1.5rem;
+            padding: 0 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.5rem 0.35rem;
+            font-size: 0.85rem;
+        }
+
+        .table th {
             font-size: 0.8rem;
         }
 
-        .btn-sm {
-            padding: 0.5rem !important;
-            font-size: 1rem !important;
+        .date-time {
+            min-width: 70px;
+        }
+
+        .date-time .date,
+        .date-time .time {
+            font-size: 0.8rem;
+        }
+
+        .lang-badge {
+            padding: 0.15rem 0.4rem;
+            font-size: 0.75rem;
+        }
+
+        .table-actions .btn {
+            padding: 0.35rem 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .table-actions {
+            gap: 0.35rem;
+        }
+
+        .search-word {
+            font-size: 0.85rem;
         }
     }
 </style>
@@ -154,55 +192,64 @@
 {% block content %}
 <div class="history-container">
     <h2 class="mb-4"><i class="fas fa-history"></i> Historique des recherches</h2>
-    
+
     {% if history %}
-    <div class="action-buttons">
-        <a href="{{ url_for('download_history') }}" class="btn btn-outline-primary btn-download">
-            <i class="fas fa-download"></i> Télécharger l'historique
-        </a>
-        <button onclick="clearAllHistory()" class="btn btn-outline-primary btn-delete">
-            <i class="fas fa-trash-alt"></i> Tout supprimer
-        </button>
-    </div>
-    
-    <div class="table-responsive history-table">
-        <table class="table table-borderless mb-0">
-            <thead>
-                <tr>
-                    <th>Mot</th>
-                    <th>Langue</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for entry in history %}
-                <tr id="history-row-{{ entry.id }}">
-                    <td>
-                        <a href="javascript:void(0)" onclick="searchWord('{{ entry.word }}', '{{ entry.source_lang }}')" class="search-word">
-                            {{ entry.word }}
-                        </a>
-                    </td>
-                    <td><span class="lang-badge">{{ entry.source_lang }}</span></td>
-                    <td>{{ entry.timestamp }}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('{{ entry.word }}')">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteHistoryEntry({{ entry.id }})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+        <div class="action-buttons">
+            <a href="{{ url_for('download_history') }}" class="btn btn-outline-primary">
+                <i class="fas fa-download"></i> Télécharger l'historique
+            </a>
+            <button onclick="clearAllHistory()" class="btn btn-outline-danger">
+                <i class="fas fa-trash-alt"></i> Tout supprimer
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Mot</th>
+                        <th>Langue</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in history %}
+                    <tr id="history-row-{{ entry.id }}">
+                        <td>
+                            <a href="javascript:void(0)" onclick="searchWord('{{ entry.word }}', '{{ entry.source_lang }}')" class="search-word">
+                                {{ entry.word }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="lang-badge">{{ entry.source_lang }}</span>
+                        </td>
+                        <td>
+                            <div class="date-time">
+                                <span class="date">{{ entry.timestamp.split(' ')[0] }}</span>
+                                <span class="time">{{ entry.timestamp.split(' ')[1] }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('{{ entry.word }}')" title="Copier">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteHistoryEntry({{ entry.id }})" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     {% else %}
-    <div class="empty-history">
-        <i class="fas fa-history"></i>
-        <p>Aucun historique de recherche pour le moment.</p>
-    </div>
+        <div class="empty-history">
+            <i class="fas fa-history"></i>
+            <p>Aucun historique de recherche pour le moment.</p>
+        </div>
     {% endif %}
 </div>
 
