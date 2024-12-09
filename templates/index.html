@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-dark: #1e3d59;
+        --primary-light: #17c3b2;
+        --text-light: #ffffff;
+        --text-dark: #227093;
+        --bg-dark: #1a1a2e;
+        --bg-light: #f5f6fa;
+        --navbar-height: 60px;
+        --search-height: 80px;
+    }
+
+    [data-bs-theme="light"] {
+        --primary-color: var(--primary-light);
+        --text-color: var(--text-dark);
+        --bg-color: var(--bg-light);
+        --card-bg: #ffffff;
+        --navbar-bg: var(--primary-dark);
+    }
+
+    [data-bs-theme="dark"] {
+        --primary-color: var(--primary-dark);
+        --text-color: var(--text-light);
+        --bg-color: var(--bg-dark);
+        --card-bg: #2c3e50;
+        --navbar-bg: var(--primary-dark);
+    }
+
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+        transition: background-color 0.3s ease;
+    }
+
+    .navbar {
+        background-color: var(--navbar-bg) !important;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .navbar-brand {
+        color: var(--text-light) !important;
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .theme-switch {
+        color: var(--text-light);
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: background-color 0.3s ease;
+    }
+
+    .theme-switch:hover {
+        background-color: rgba(255,255,255,0.1);
+    }
+
+    .search-bar {
+        background-color: var(--navbar-bg);
+        padding: 1rem;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .search-bar .form-control {
+        background-color: rgba(255,255,255,0.1);
+        border: none;
+        color: var(--text-light);
+    }
+
+    .search-bar .form-control::placeholder {
+        color: rgba(255,255,255,0.7);
+    }
+
+    .search-bar .form-control:focus {
+        background-color: rgba(255,255,255,0.2);
+        box-shadow: none;
+    }
+
+    .search-bar .form-select {
+        background-color: rgba(255,255,255,0.1);
+        border: none;
+        color: var(--text-light);
+        cursor: pointer;
+    }
+
+    .search-bar .form-select option {
+        background-color: var(--card-bg);
+        color: var(--text-color);
+        padding: 10px;
+    }
+
+    .search-bar .form-select:focus {
+        background-color: rgba(255,255,255,0.2);
+        box-shadow: none;
+    }
+
+    .search-bar .btn-search {
+        background-color: var(--primary-light);
+        border: none;
+        color: var(--text-light);
+        padding: 0.5rem 2rem;
+        transition: all 0.3s ease;
+    }
+
+    .search-bar .btn-search:hover {
+        background-color: #15b4a4;
+        transform: translateY(-1px);
+    }
+
+    .content-container {
+        display: flex;
+        height: calc(100vh - var(--navbar-height) - var(--search-height));
+        margin-top: 1rem;
+    }
+
+    .translations-panel {
+        width: 50%;
+        overflow-y: auto;
+        padding: 1rem;
+        background: var(--card-bg);
+        border-right: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .definitions-panel {
+        width: 50%;
+        overflow-y: auto;
+        padding: 1rem;
+        background: var(--card-bg);
+    }
+
+    .card {
+        background-color: var(--card-bg);
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .translation-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .example-text {
+        border-left: 3px solid var(--primary-light);
+        padding-left: 1rem;
+        margin: 0.5rem 0;
+        color: var(--text-color);
+    }
+
+    .synonym-tag {
+        background-color: var(--primary-light);
+        color: var(--text-light);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        margin: 0.25rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .synonym-tag:hover {
+        background-color: #15b4a4;
+        transform: translateY(-2px);
+    }
+
+    .navbar-nav .nav-link {
+        color: var(--text-light) !important;
+        margin: 0 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .navbar-nav .nav-link:hover {
+        background-color: rgba(255,255,255,0.1);
+        transform: translateY(-2px);
+    }
+
+    .navbar-nav .nav-link i {
+        margin-right: 0.5rem;
+    }
+
+    .navbar-toggler {
+        border: none;
+        padding: 0.5rem;
+    }
+
+    .navbar-toggler:focus {
+        box-shadow: none;
+    }
+
+    @media (max-width: 992px) {
+        .content-container {
+            flex-direction: column;
+            height: auto;
+        }
+
+        .translations-panel,
+        .definitions-panel {
+            width: 100%;
+            border-right: none;
+        }
+
+        .translations-panel {
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .navbar-brand {
+            font-size: 1.2rem;
+        }
+
+        .search-bar .row {
+            flex-direction: column;
+        }
+
+        .search-bar .col-md-4 {
+            margin-top: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="search-bar">
+    <form id="searchForm">
+        <div class="row g-3">
+            <div class="col-md-8">
+                <input type="text" id="word" class="form-control form-control-lg" 
+                       placeholder="Entrez un mot" required>
+            </div>
+            <div class="col-md-4">
+                <select id="lang" class="form-select form-select-lg" aria-label="Sélectionner la langue">
+                    <option value="fr" selected>Français</option>
+                    <option value="en">English</option>
+                    <option value="de">Deutsch</option>
+                    <option value="es">Español</option>
+                    <option value="it">Italiano</option>
+                </select>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            <button type="submit" class="btn btn-search btn-lg">
+                <i class="fas fa-search"></i> Rechercher
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="content-container">
+    <div class="translations-panel" id="translations"></div>
+    <div class="definitions-panel" id="wiktionary"></div>
+</div>
+
+<div id="loader" class="loader"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Fonction pour obtenir les paramètres de l'URL
+    function getUrlParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+            word: params.get('word'),
+            lang: params.get('lang')
+        };
+    }
+
+    // Pré-remplir le formulaire si des paramètres sont présents
+    window.addEventListener('load', () => {
+        const params = getUrlParams();
+        if (params.word) {
+            document.getElementById('word').value = params.word;
+            if (params.lang) {
+                document.getElementById('lang').value = params.lang;
+            }
+            // Déclencher automatiquement la recherche
+            document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+        }
+    });
+
+    // Gestion du thème
+    function toggleTheme() {
+        const html = document.documentElement;
+        const themeIcon = document.querySelector('.theme-switch i');
+        
+        if (html.getAttribute('data-bs-theme') === 'light') {
+            html.setAttribute('data-bs-theme', 'dark');
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+        } else {
+            html.setAttribute('data-bs-theme', 'light');
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+        }
+    }
+
+    // Gestion de la recherche
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const word = document.getElementById('word').value.trim();
+        const lang = document.getElementById('lang').value;
+        const loader = document.getElementById('loader');
+        const translations = document.getElementById('translations');
+        const wiktionary = document.getElementById('wiktionary');
+
+        if (!word) return;
+
+        loader.style.display = 'block';
+        translations.innerHTML = '';
+        wiktionary.innerHTML = '';
+
+        try {
+            const response = await fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ word, lang })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                wiktionary.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+            } else {
+                // Afficher les traductions
+                translations.innerHTML = Object.entries(data.translations)
+                    .map(([lang, translation]) => `
+                        <div class="card translation-card">
+                            <div class="card-body">
+                                <h5 class="card-title">${lang}</h5>
+                                <p class="card-text">${translation}</p>
+                            </div>
+                        </div>
+                    `).join('');
+
+                // Afficher les définitions
+                let wiktionaryHtml = '<div class="card">';
+                wiktionaryHtml += '<div class="card-body">';
+
+                if (data.etymology) {
+                    wiktionaryHtml += `
+                        <div class="etymology-section">
+                            <h5><i class="fas fa-history"></i> Étymologie</h5>
+                            <p>${data.etymology}</p>
+                        </div>
+                    `;
+                }
+
+                if (data.definitions && data.definitions.length > 0) {
+                    wiktionaryHtml += '<h5><i class="fas fa-book"></i> Définitions</h5>';
+                    data.definitions.forEach((def, index) => {
+                        wiktionaryHtml += `
+                            <p class="mb-2">
+                                <span class="definition-number">${index + 1}.</span>
+                                ${def}
+                            </p>
+                        `;
+                    });
+                }
+
+                if (data.examples && data.examples.length > 0) {
+                    wiktionaryHtml += '<h5 class="mt-4"><i class="fas fa-quote-right"></i> Exemples</h5>';
+                    data.examples.forEach(example => {
+                        wiktionaryHtml += `<p class="example-text">${example}</p>`;
+                    });
+                }
+
+                if (data.synonyms && data.synonyms.length > 0) {
+                    wiktionaryHtml += '<h5 class="mt-4"><i class="fas fa-exchange-alt"></i> Synonymes</h5>';
+                    wiktionaryHtml += '<div class="synonyms-container">';
+                    data.synonyms.forEach(synonym => {
+                        wiktionaryHtml += `
+                            <span class="synonym-tag" onclick="document.getElementById('word').value='${synonym}'; document.getElementById('searchForm').dispatchEvent(new Event('submit'))">
+                                ${synonym}
+                            </span>
+                        `;
+                    });
+                    wiktionaryHtml += '</div>';
+                }
+
+                wiktionaryHtml += '</div></div>';
+                wiktionary.innerHTML = wiktionaryHtml;
+            }
+        } catch (error) {
+            wiktionary.innerHTML = `<div class="alert alert-danger">Erreur de connexion</div>`;
+        } finally {
+            loader.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

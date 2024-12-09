@@ -1,0 +1,233 @@
+:root {
+    --primary-color: #2c3e50;
+    --accent-color: #3498db;
+    --background-color: #ecf0f1;
+    --text-color: #2c3e50;
+    --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --border-color: #ddd;
+    --hover-color: #f8f9fa;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+}
+
+.search-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.search-input {
+    flex: 1;
+    padding: 0.8rem 1rem;
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+}
+
+.language-select {
+    padding: 0.8rem;
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    background-color: white;
+    cursor: pointer;
+}
+
+.search-button {
+    padding: 0.8rem 1.5rem;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.search-button:hover {
+    background-color: #2980b9;
+}
+
+.result-container {
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.result-container.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.word-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 2rem;
+}
+
+.language-badge {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--accent-color);
+    color: white;
+    border-radius: 20px;
+}
+
+.section {
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.definition-item {
+    margin-bottom: 1rem;
+    padding-left: 1rem;
+    border-left: 4px solid var(--accent-color);
+}
+
+.definition-number {
+    font-weight: bold;
+    color: var(--accent-color);
+    margin-right: 0.5rem;
+}
+
+.etymology-box {
+    background-color: var(--background-color);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+}
+
+.example-item {
+    font-style: italic;
+    margin-bottom: 1rem;
+    padding-left: 1rem;
+    border-left: 4px solid var(--accent-color);
+}
+
+.synonym-tag {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    margin: 0.25rem;
+    background-color: var(--background-color);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.synonym-tag:hover {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 2rem;
+}
+
+.error-message {
+    color: #e74c3c;
+    text-align: center;
+    padding: 1rem;
+}
+
+.translations-container {
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.translations-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.translation-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+}
+
+.translation-item:last-child {
+    border-bottom: none;
+}
+
+.translation-item:hover {
+    background-color: var(--hover-color);
+}
+
+.translation-language {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.translation-word {
+    color: var(--accent-color);
+    font-weight: 500;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    .search-container {
+        flex-direction: column;
+    }
+    
+    .search-button {
+        width: 100%;
+    }
+
+    .word-title {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+}
