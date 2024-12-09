@@ -205,6 +205,22 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Variables globales pour le statut de l'historique
+        let hasHistory = false;
+
+        // Fonction pour vérifier l'historique
+        function checkHistory() {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', '/check_history', false);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    hasHistory = response.has_history;
+                }
+            };
+            xhr.send();
+        }
+
         function toggleTheme() {
             const html = document.documentElement;
             const themeIcon = document.getElementById('theme-icon');
@@ -238,22 +254,24 @@
                 themeIcon.classList.remove('fa-moon');
                 themeIcon.classList.add('fa-sun');
             }
+
+            // Vérifier l'historique au chargement
+            checkHistory();
         });
 
-        // Alerte uniquement lors de la fermeture de l'onglet
+        // Vérifier l'historique après chaque recherche
+        document.addEventListener('searchCompleted', function() {
+            checkHistory();
+        });
+
+        // Alerte lors de la fermeture de l'onglet
         window.addEventListener('beforeunload', function(e) {
-            // Vérifier si l'utilisateur a un historique
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', '/check_history', false); // Requête synchrone nécessaire pour beforeunload
-            xhr.send();
-            
-            if (xhr.status === 200) {
-                const response = JSON.parse(xhr.responseText);
-                if (response.has_history) {
-                    e.preventDefault();
-                    e.returnValue = 'Attention : votre historique de recherche sera perdu. Pensez à le télécharger depuis la page historique si vous souhaitez le conserver.';
-                    return e.returnValue;
-                }
+            checkHistory(); // Vérifier une dernière fois avant la fermeture
+            if (hasHistory) {
+                const message = 'Attention : votre historique de recherche sera perdu. Pensez à le télécharger depuis la page historique si vous souhaitez le conserver.';
+                e.preventDefault();
+                e.returnValue = message;
+                return message;
             }
         });
     </script>

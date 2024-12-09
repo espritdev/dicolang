@@ -400,6 +400,8 @@
             wiktionary.innerHTML = `<div class="alert alert-danger">Erreur de connexion</div>`;
         } finally {
             loader.style.display = 'none';
+            // Émettre l'événement searchCompleted
+            document.dispatchEvent(new Event('searchCompleted'));
         }
     });
 </script>
