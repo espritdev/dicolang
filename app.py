@@ -374,6 +374,11 @@ def download_history():
         headers={'Content-Disposition': 'attachment;filename=historique_recherches.txt'}
     )
 
+@app.route('/check_history')
+def check_history():
+    history = get_search_history()
+    return jsonify({'has_history': len(history) > 0})
+
 # Initialize the database at startup
 init_db()
 

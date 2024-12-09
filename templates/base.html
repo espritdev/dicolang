@@ -239,6 +239,34 @@
                 themeIcon.classList.add('fa-sun');
             }
         });
+
+        // Alerte lors de la fermeture de l'onglet
+        window.addEventListener('beforeunload', function(e) {
+            // Vérifier si l'utilisateur a un historique
+            fetch('/check_history')
+            .then(response => response.json())
+            .then(data => {
+                if (data.has_history) {
+                    // Message personnalisé pour Chrome/Firefox/Safari
+                    e.preventDefault();
+                    e.returnValue = 'Attention : votre historique de recherche sera perdu. Voulez-vous le télécharger avant de quitter ?';
+                    return e.returnValue;
+                }
+            });
+        });
+
+        // Fonction pour vérifier si l'utilisateur quitte via le menu ou un lien
+        document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' && !e.target.hasAttribute('download')) {
+                const href = e.target.getAttribute('href');
+                if (href && href !== '#' && !href.startsWith('javascript:')) {
+                    if (confirm('Voulez-vous télécharger votre historique avant de quitter cette page ?')) {
+                        e.preventDefault();
+                        window.location.href = '/download_history';
+                    }
+                }
+            }
+        });
     </script>
     {% block extra_js %}{% endblock %}
 </body>
