@@ -271,44 +271,34 @@ def decouverte():
 def a_propos():
     return render_template('a_propos.html')
 
-@app.route('/search', methods=['POST'])
-def search():
-    data = request.get_json()
-    word = data.get('word', '').strip()
-    lang = data.get('lang', 'fr')
+@app.route('/search', methods=['GET'])
+def search_word():
+    word = request.args.get('word', '')
+    lang = request.args.get('lang', 'fr')
     
     if not word:
         return jsonify({"error": "Veuillez entrer un mot"})
     
     try:
-        original_word = word
+        # Garder le mot original pour l'affichage et l'historique
+        original_word = word.strip()
+        # Convertir en minuscules pour la recherche
+        search_word = original_word.lower()
         
-        # Rechercher d'abord avec le mot tel quel
-        wiktionary_url = f"https://fr.wiktionary.org/wiki/{quote(original_word)}"
+        # Rechercher avec le mot en minuscules
+        wiktionary_url = f"https://fr.wiktionary.org/wiki/{quote(search_word)}"
         response = requests.get(wiktionary_url, headers=session.headers)
-        
-        if response.status_code == 404:
-            # Si non trouvé, essayer en minuscules
-            word_lower = word.lower()
-            wiktionary_url = f"https://fr.wiktionary.org/wiki/{quote(word_lower)}"
-            response = requests.get(wiktionary_url, headers=session.headers)
-            
-            if response.status_code == 404:
-                # Si toujours non trouvé, essayer avec la première lettre en majuscule
-                word_capitalized = word.capitalize()
-                wiktionary_url = f"https://fr.wiktionary.org/wiki/{quote(word_capitalized)}"
-                response = requests.get(wiktionary_url, headers=session.headers)
         
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             
-            # Sauvegarder dans l'historique avec le mot original (avec majuscules si présentes)
+            # Sauvegarder dans l'historique avec le mot original
             add_to_history(original_word, lang)
             
             # Exécuter les requêtes en parallèle
             with ThreadPoolExecutor(max_workers=2) as executor:
-                translations_future = executor.submit(get_all_translations, original_word, lang)
-                wiktionary_future = executor.submit(get_wiktionary_data, original_word, lang)
+                translations_future = executor.submit(get_all_translations, search_word, lang)
+                wiktionary_future = executor.submit(get_wiktionary_data, search_word, lang)
                 
                 translations = translations_future.result()
                 wiktionary_data = wiktionary_future.result()
