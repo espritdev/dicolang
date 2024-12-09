@@ -136,7 +136,7 @@ def get_wiktionary_data(word, lang='fr'):
         # Trouver la section française
         french_section = None
         for h2 in soup.find_all('h2'):
-            if h2.find('span', {'id': 'Français'}):
+            if h2.find('span', {'id': 'Français'}) or h2.find('span', {'id': 'français'}):
                 french_section = h2
                 break
         
@@ -145,21 +145,21 @@ def get_wiktionary_data(word, lang='fr'):
             return {'etymology': None, 'definitions': [], 'examples': []}
         
         # Récupérer toutes les sections jusqu'à la prochaine h2
-        current = french_section.next_sibling
-        sections = []
-        while current and not (isinstance(current, Tag) and current.name == 'h2'):
-            if isinstance(current, Tag):
-                sections.append(current)
-            current = current.next_sibling
+        content = []
+        current = french_section.find_next()
+        while current and current.name != 'h2':
+            if current.name in ['h3', 'h4', 'p', 'ol']:
+                content.append(current)
+            current = current.find_next()
         
         # Récupérer les définitions
         definitions = []
         examples = []
         etymology = None
         
-        for section in sections:
+        for section in content:
             # Chercher l'étymologie
-            if section.find('span', {'id': 'Étymologie'}):
+            if section.name == 'h3' and section.find('span', {'id': 'Étymologie'}):
                 etym_p = section.find_next('p')
                 if etym_p:
                     etymology = etym_p.get_text().strip()
@@ -170,8 +170,13 @@ def get_wiktionary_data(word, lang='fr'):
                 for li in section.find_all('li', recursive=False):
                     def_text = li.get_text().strip()
                     if def_text and not def_text.startswith('('):
-                        definitions.append(def_text)
-                        print(f"Définition trouvée: {def_text}")
+                        # Nettoyer la définition
+                        def_text = re.sub(r'\([^)]*\)', '', def_text)  # Supprimer les parenthèses
+                        def_text = re.sub(r'\s+', ' ', def_text)  # Normaliser les espaces
+                        def_text = def_text.strip()
+                        if def_text:
+                            definitions.append(def_text)
+                            print(f"Définition trouvée: {def_text}")
                         
                         # Chercher les exemples dans cette définition
                         example_ul = li.find('ul')
