@@ -2,6 +2,22 @@
 
 {% block extra_css %}
 <style>
+    :root {
+        --primary-light: #007bff;
+        --text-light: #ffffff;
+        --card-bg: #ffffff;
+        --text-color: #333333;
+        --danger-color: #dc3545;
+        --success-color: #28a745;
+    }
+
+    [data-theme="dark"] {
+        --primary-light: #4da3ff;
+        --text-light: #ffffff;
+        --card-bg: #2d2d2d;
+        --text-color: #e0e0e0;
+    }
+
     .history-container {
         max-width: 800px;
         margin: 2rem auto;
@@ -25,10 +41,11 @@
 
     .history-table td {
         vertical-align: middle;
+        color: var(--text-color);
     }
 
     .history-table tr:hover {
-        background-color: rgba(255, 255, 255, 0.05);
+        background-color: rgba(128, 128, 128, 0.1);
     }
 
     .search-word {
@@ -62,6 +79,33 @@
         color: var(--primary-light);
         margin-bottom: 1rem;
     }
+
+    .action-buttons {
+        margin-bottom: 1rem;
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    .btn-delete {
+        color: var(--danger-color);
+        border-color: var(--danger-color);
+    }
+
+    .btn-delete:hover {
+        background-color: var(--danger-color);
+        color: white;
+    }
+
+    .btn-download {
+        color: var(--success-color);
+        border-color: var(--success-color);
+    }
+
+    .btn-download:hover {
+        background-color: var(--success-color);
+        color: white;
+    }
 </style>
 {% endblock %}
 
@@ -72,6 +116,15 @@
     <h2 class="mb-4"><i class="fas fa-history"></i> Historique des recherches</h2>
     
     {% if history %}
+    <div class="action-buttons">
+        <a href="{{ url_for('download_history') }}" class="btn btn-outline-primary btn-download">
+            <i class="fas fa-download"></i> Télécharger l'historique
+        </a>
+        <button onclick="clearAllHistory()" class="btn btn-outline-primary btn-delete">
+            <i class="fas fa-trash-alt"></i> Tout supprimer
+        </button>
+    </div>
+    
     <div class="table-responsive history-table">
         <table class="table table-borderless mb-0">
             <thead>
@@ -79,22 +132,25 @@
                     <th>Mot</th>
                     <th>Langue</th>
                     <th>Date</th>
-                    <th>Action</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for id, word, lang, timestamp in history %}
-                <tr>
+                {% for entry in history %}
+                <tr id="history-row-{{ entry.id }}">
                     <td>
-                        <a href="javascript:void(0)" onclick="searchWord('{{ word }}', '{{ lang }}')" class="search-word">
-                            {{ word }}
+                        <a href="javascript:void(0)" onclick="searchWord('{{ entry.word }}', '{{ entry.source_lang }}')" class="search-word">
+                            {{ entry.word }}
                         </a>
                     </td>
-                    <td><span class="lang-badge">{{ lang }}</span></td>
-                    <td>{{ timestamp }}</td>
+                    <td><span class="lang-badge">{{ entry.source_lang }}</span></td>
+                    <td>{{ entry.timestamp }}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('{{ word }}')">
+                        <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('{{ entry.word }}')">
                             <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteHistoryEntry({{ entry.id }})">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 </tr>
@@ -104,18 +160,15 @@
     </div>
     {% else %}
     <div class="empty-history">
-        <i class="fas fa-search"></i>
-        <h3>Aucune recherche pour le moment</h3>
-        <p>Vos recherches apparaîtront ici</p>
+        <i class="fas fa-history"></i>
+        <p>Aucun historique de recherche pour le moment.</p>
     </div>
     {% endif %}
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
 function searchWord(word, lang) {
-    window.location.href = `/?word=${encodeURIComponent(word)}&lang=${encodeURIComponent(lang)}`;
+    window.location.href = `/?word=${encodeURIComponent(word)}&lang=${lang}`;
 }
 
 function copyToClipboard(text) {
@@ -125,6 +178,37 @@ function copyToClipboard(text) {
     }).catch(err => {
         console.error('Erreur lors de la copie :', err);
     });
+}
+
+function deleteHistoryEntry(id) {
+    if (confirm('Voulez-vous vraiment supprimer cette entrée ?')) {
+        fetch(`/delete_history_entry/${id}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`history-row-${id}`).remove();
+                if (document.querySelectorAll('tbody tr').length === 0) {
+                    location.reload();
+                }
+            }
+        });
+    }
+}
+
+function clearAllHistory() {
+    if (confirm('Voulez-vous vraiment supprimer tout l\'historique ?')) {
+        fetch('/clear_history', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
 }
 </script>
 {% endblock %}

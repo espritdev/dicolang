@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, g
+from flask import Flask, render_template, request, jsonify, g, Response
 from deep_translator import GoogleTranslator
 from functools import lru_cache
 import requests
@@ -78,6 +78,44 @@ def get_search_history():
     except Exception as e:
         print(f"Error getting history: {e}")
         return []
+
+def delete_from_history(word_id):
+    try:
+        with app.app_context():
+            db = get_db()
+            db.execute('DELETE FROM search_history WHERE id = ?', (word_id,))
+            db.commit()
+            return True
+    except Exception as e:
+        print(f"Error deleting from history: {e}")
+        return False
+
+def clear_history():
+    try:
+        with app.app_context():
+            db = get_db()
+            db.execute('DELETE FROM search_history')
+            db.commit()
+            return True
+    except Exception as e:
+        print(f"Error clearing history: {e}")
+        return False
+
+def get_history_as_text():
+    try:
+        history = get_search_history()
+        text_content = "Historique des recherches:\n\n"
+        for entry in history:
+            timestamp = datetime.strptime(entry['timestamp'], '%Y-%m-%d %H:%M:%S')
+            formatted_date = timestamp.strftime('%d/%m/%Y %H:%M:%S')
+            text_content += f"Mot: {entry['word']}\n"
+            text_content += f"Langue: {entry['source_lang']}\n"
+            text_content += f"Date: {formatted_date}\n"
+            text_content += "-" * 40 + "\n"
+        return text_content
+    except Exception as e:
+        print(f"Error generating history text: {e}")
+        return "Erreur lors de la génération du fichier"
 
 def cached_translate_word(word, source_lang, target_lang):
     cache_key = f"{word}:{source_lang}:{target_lang}"
@@ -270,6 +308,27 @@ def search():
 def historique():
     history = get_search_history()
     return render_template('historique.html', history=history)
+
+@app.route('/delete_history_entry/<int:word_id>', methods=['POST'])
+def delete_history_entry(word_id):
+    if delete_from_history(word_id):
+        return jsonify({'success': True})
+    return jsonify({'success': False}), 500
+
+@app.route('/clear_history', methods=['POST'])
+def clear_all_history():
+    if clear_history():
+        return jsonify({'success': True})
+    return jsonify({'success': False}), 500
+
+@app.route('/download_history')
+def download_history():
+    text_content = get_history_as_text()
+    return Response(
+        text_content,
+        mimetype='text/plain',
+        headers={'Content-Disposition': 'attachment;filename=historique_recherches.txt'}
+    )
 
 # Initialize the database at startup
 init_db()
