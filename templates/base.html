@@ -186,7 +186,6 @@
                 </ul>
                 <div class="theme-switch" onclick="toggleTheme()">
                     <i class="fas fa-moon" id="theme-icon"></i>
-                    <span id="theme-text">Mode sombre</span>
                 </div>
             </div>
         </div>
@@ -201,7 +200,6 @@
         function toggleTheme() {
             const html = document.documentElement;
             const themeIcon = document.getElementById('theme-icon');
-            const themeText = document.getElementById('theme-text');
             const currentTheme = html.getAttribute('data-bs-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
@@ -211,11 +209,9 @@
             if (newTheme === 'dark') {
                 themeIcon.classList.remove('fa-sun');
                 themeIcon.classList.add('fa-moon');
-                themeText.textContent = 'Mode clair';
             } else {
                 themeIcon.classList.remove('fa-moon');
                 themeIcon.classList.add('fa-sun');
-                themeText.textContent = 'Mode sombre';
             }
         }
 
@@ -224,18 +220,15 @@
             const savedTheme = localStorage.getItem('theme') || 'light';
             const html = document.documentElement;
             const themeIcon = document.getElementById('theme-icon');
-            const themeText = document.getElementById('theme-text');
             
             html.setAttribute('data-bs-theme', savedTheme);
             
             if (savedTheme === 'dark') {
                 themeIcon.classList.remove('fa-sun');
                 themeIcon.classList.add('fa-moon');
-                themeText.textContent = 'Mode clair';
             } else {
                 themeIcon.classList.remove('fa-moon');
                 themeIcon.classList.add('fa-sun');
-                themeText.textContent = 'Mode sombre';
             }
         });
     </script>

@@ -12,12 +12,18 @@ from datetime import datetime
 import os
 
 app = Flask(__name__)
-session = requests.Session()
-executor = ThreadPoolExecutor(max_workers=4)
 
 # Cache avec expiration après 1 heure
 wiktionary_cache = cachetools.TTLCache(maxsize=1000, ttl=3600)
 translation_cache = cachetools.TTLCache(maxsize=1000, ttl=3600)
+
+# Session pour réutiliser les connexions HTTP
+session = requests.Session()
+session.headers.update({
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+})
+
+executor = ThreadPoolExecutor(max_workers=4)
 
 LANGUAGES = {
     'fr': 'Français',
@@ -145,16 +151,17 @@ def get_all_translations(word, source_lang):
     ]
     
     with ThreadPoolExecutor(max_workers=4) as executor:
-        results = executor.map(translate_to_language, translation_tasks)
+        results = list(executor.map(translate_to_language, translation_tasks))
         
-    for lang_name, translation in results:
-        translations[lang_name] = translation
-    
+    translations.update(dict(results))
     return translations
 
 def get_wiktionary_data(word, lang='fr'):
+    cache_key = f"wiktionary:{word}:{lang}"
+    if cache_key in wiktionary_cache:
+        return wiktionary_cache[cache_key]
+
     try:
-        # Construire l'URL en fonction de la langue
         if lang == 'fr':
             url = f'https://fr.wiktionary.org/wiki/{word}'
         else:
@@ -162,21 +169,15 @@ def get_wiktionary_data(word, lang='fr'):
 
         print(f"[Wiktionary] Fetching data from: {url}")
 
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-        
-        response = requests.get(url, headers=headers)
+        response = session.get(url, timeout=5)
         response.raise_for_status()
         
         print(f"[Wiktionary] Response status code: {response.status_code}")
         
-        # Utiliser explicitement lxml comme parser
-        soup = BeautifulSoup(response.text, 'lxml')
+        soup = BeautifulSoup(response.text, 'lxml', parse_only=SoupStrainer(['h2', 'h3', 'h4', 'p', 'ol']))
         
         print("[Wiktionary] HTML parsed successfully")
         
-        # Trouver la section française
         french_section = None
         for h2 in soup.find_all('h2'):
             span = h2.find('span', {'id': ['Français', 'français']})
@@ -187,11 +188,10 @@ def get_wiktionary_data(word, lang='fr'):
         
         if not french_section:
             print("[Wiktionary] French section not found in the page")
-            # Vérifier si la page existe
             if "Wiktionnaire ne possède pas d'article avec ce nom" in response.text:
                 print("[Wiktionary] Page does not exist")
                 return {'etymology': None, 'definitions': [], 'examples': []}
-            # Essayer de trouver directement les définitions si la section française n'est pas trouvée
+            
             definitions_list = soup.find('ol')
             if definitions_list:
                 print("[Wiktionary] Found definitions list without French section")
@@ -199,7 +199,6 @@ def get_wiktionary_data(word, lang='fr'):
             else:
                 return {'etymology': None, 'definitions': [], 'examples': []}
         else:
-            # Récupérer toutes les sections jusqu'à la prochaine h2
             content = []
             current = french_section.find_next()
             while current and current.name != 'h2':
@@ -207,33 +206,28 @@ def get_wiktionary_data(word, lang='fr'):
                     content.append(current)
                 current = current.find_next()
         
-        # Récupérer les définitions
         definitions = []
         examples = []
         etymology = None
         
         for section in content:
-            # Chercher l'étymologie
             if section.name == 'h3' and section.find('span', {'id': 'Étymologie'}):
                 etym_p = section.find_next('p')
                 if etym_p:
                     etymology = etym_p.get_text().strip()
                     print(f"[Wiktionary] Etymology found: {etymology[:50]}...")
             
-            # Chercher les définitions
             if section.name == 'ol':
                 for li in section.find_all('li', recursive=False):
                     def_text = li.get_text().strip()
                     if def_text and not def_text.startswith('('):
-                        # Nettoyer la définition
-                        def_text = re.sub(r'\([^)]*\)', '', def_text)  # Supprimer les parenthèses
-                        def_text = re.sub(r'\s+', ' ', def_text)  # Normaliser les espaces
+                        def_text = re.sub(r'\([^)]*\)', '', def_text)
+                        def_text = re.sub(r'\s+', ' ', def_text)
                         def_text = def_text.strip()
                         if def_text:
                             definitions.append(def_text)
                             print(f"[Wiktionary] Definition found: {def_text[:50]}...")
                         
-                        # Chercher les exemples dans cette définition
                         example_ul = li.find('ul')
                         if example_ul:
                             for ex_li in example_ul.find_all('li'):
@@ -248,9 +242,13 @@ def get_wiktionary_data(word, lang='fr'):
             'examples': examples[:3]
         }
         
+        wiktionary_cache[cache_key] = result
         print(f"[Wiktionary] Final result for {word}: {len(definitions)} definitions, {len(examples)} examples")
         return result
         
+    except requests.Timeout:
+        print("[Wiktionary] Request timed out")
+        return {'etymology': None, 'definitions': [], 'examples': []}
     except requests.RequestException as e:
         print(f"[Wiktionary] Network error: {str(e)}")
         return {'etymology': None, 'definitions': [], 'examples': []}
