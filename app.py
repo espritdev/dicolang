@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, g
 from deep_translator import GoogleTranslator
 from functools import lru_cache
 import requests
-from bs4 import BeautifulSoup, SoupStrainer
+from bs4 import BeautifulSoup, SoupStrainer, Tag
 import re
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -122,54 +122,79 @@ def get_wiktionary_data(word, lang='fr'):
         else:
             url = f'https://fr.wiktionary.org/wiki/{word}#{LANGUAGES.get(lang, lang)}'
 
+        print(f"Fetching Wiktionary data from: {url}")
+
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         
         response = requests.get(url, headers=headers)
-        response.raise_for_status()  # Lève une exception pour les erreurs HTTP
+        response.raise_for_status()
         
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Récupérer l'étymologie
-        etymology = None
-        etymology_section = soup.find('span', id=lambda x: x and 'tymologie' in x)
-        if etymology_section:
-            etymology_p = etymology_section.find_next('p')
-            if etymology_p:
-                etymology = etymology_p.get_text().strip()
+        # Trouver la section française
+        french_section = None
+        for h2 in soup.find_all('h2'):
+            if h2.find('span', {'id': 'Français'}):
+                french_section = h2
+                break
+        
+        if not french_section:
+            print("Section française non trouvée")
+            return {'etymology': None, 'definitions': [], 'examples': []}
+        
+        # Récupérer toutes les sections jusqu'à la prochaine h2
+        current = french_section.next_sibling
+        sections = []
+        while current and not (isinstance(current, Tag) and current.name == 'h2'):
+            if isinstance(current, Tag):
+                sections.append(current)
+            current = current.next_sibling
         
         # Récupérer les définitions
         definitions = []
-        definitions_section = soup.find('span', id=lambda x: x and ('finitions' in x or 'Definitions' in x))
-        if definitions_section:
-            # Trouver la liste des définitions
-            definitions_list = definitions_section.find_next('ol')
-            if definitions_list:
-                for definition in definitions_list.find_all('li', recursive=False):
-                    # Nettoyer la définition
-                    def_text = definition.get_text().strip()
-                    if def_text and not def_text.startswith('(') and len(def_text) > 1:
-                        definitions.append(def_text)
-        
-        # Récupérer les exemples
         examples = []
-        for definition in definitions_list.find_all('li') if definitions_list else []:
-            example_list = definition.find('ul')
-            if example_list:
-                for example in example_list.find_all('li'):
-                    example_text = example.get_text().strip()
-                    if example_text:
-                        examples.append(example_text)
+        etymology = None
         
-        return {
+        for section in sections:
+            # Chercher l'étymologie
+            if section.find('span', {'id': 'Étymologie'}):
+                etym_p = section.find_next('p')
+                if etym_p:
+                    etymology = etym_p.get_text().strip()
+                    print(f"Étymologie trouvée: {etymology}")
+            
+            # Chercher les définitions
+            if section.name == 'ol':
+                for li in section.find_all('li', recursive=False):
+                    def_text = li.get_text().strip()
+                    if def_text and not def_text.startswith('('):
+                        definitions.append(def_text)
+                        print(f"Définition trouvée: {def_text}")
+                        
+                        # Chercher les exemples dans cette définition
+                        example_ul = li.find('ul')
+                        if example_ul:
+                            for ex_li in example_ul.find_all('li'):
+                                ex_text = ex_li.get_text().strip()
+                                if ex_text:
+                                    examples.append(ex_text)
+                                    print(f"Exemple trouvé: {ex_text}")
+        
+        result = {
             'etymology': etymology,
-            'definitions': definitions[:5],  # Limiter à 5 définitions
-            'examples': examples[:3]  # Limiter à 3 exemples
+            'definitions': definitions[:5],
+            'examples': examples[:3]
         }
+        
+        print(f"Résultat final pour {word}: {result}")
+        return result
         
     except Exception as e:
         print(f"Erreur lors de la récupération des données Wiktionary: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {
             'etymology': None,
             'definitions': [],
