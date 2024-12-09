@@ -240,30 +240,19 @@
             }
         });
 
-        // Alerte lors de la fermeture de l'onglet
+        // Alerte uniquement lors de la fermeture de l'onglet
         window.addEventListener('beforeunload', function(e) {
             // Vérifier si l'utilisateur a un historique
-            fetch('/check_history')
-            .then(response => response.json())
-            .then(data => {
-                if (data.has_history) {
-                    // Message personnalisé pour Chrome/Firefox/Safari
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', '/check_history', false); // Requête synchrone nécessaire pour beforeunload
+            xhr.send();
+            
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                if (response.has_history) {
                     e.preventDefault();
-                    e.returnValue = 'Attention : votre historique de recherche sera perdu. Voulez-vous le télécharger avant de quitter ?';
+                    e.returnValue = 'Attention : votre historique de recherche sera perdu. Pensez à le télécharger depuis la page historique si vous souhaitez le conserver.';
                     return e.returnValue;
-                }
-            });
-        });
-
-        // Fonction pour vérifier si l'utilisateur quitte via le menu ou un lien
-        document.addEventListener('click', function(e) {
-            if (e.target.tagName === 'A' && !e.target.hasAttribute('download')) {
-                const href = e.target.getAttribute('href');
-                if (href && href !== '#' && !href.startsWith('javascript:')) {
-                    if (confirm('Voulez-vous télécharger votre historique avant de quitter cette page ?')) {
-                        e.preventDefault();
-                        window.location.href = '/download_history';
-                    }
                 }
             }
         });
